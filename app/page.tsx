@@ -1,6 +1,6 @@
-"use client"
+'use client'
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ModeToggle } from "@/components/mode-toggle"
 import { SafetyDataComponent } from "@/components/safety-map"
@@ -8,7 +8,6 @@ import { SystemsThinking } from "@/components/systems-thinking"
 import { ActionSection } from "@/components/action-section"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Info, TrendingUp, Users } from "lucide-react"
-import { GoogleGenerativeAI } from "@google/generative-ai"
 
 // Define data types
 type PageData = {
@@ -22,94 +21,23 @@ type PageData = {
 }
 
 export default function Home() {
-  const [pageData, setPageData] = useState<PageData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [pageData, setPageData] = useState<PageData>({
+    stats: {
+      reportedIncidents: 2347,
+      responseTime: 27,
+      cctvCoverage: 43,
+      communityReports: 5129
+    },
+    lastUpdated: new Date().toISOString()
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // If API fails or isn't available, use Gemini to generate mock data
-        const mockData = await generateMockData()
-        setPageData(mockData)
-      } catch (err) {
-        console.error("Error fetching page data:", err)
-        // Use fallback values
-        setPageData({
-          stats: {
-            reportedIncidents: 2347,
-            responseTime: 27,
-            cctvCoverage: 43,
-            communityReports: 5129
-          },
-          lastUpdated: new Date().toISOString()
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  // Function to generate mock data using Gemini AI
-  async function generateMockData(): Promise<PageData> {
-    try {
-      // Check if Gemini API key is available
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
-      
-      if (!apiKey) {
-        // If no API key, return hardcoded mock data
-        return {
-          stats: {
-            reportedIncidents: Math.floor(Math.random() * 1000) + 2000,
-            responseTime: Math.floor(Math.random() * 15) + 20,
-            cctvCoverage: Math.floor(Math.random() * 20) + 35,
-            communityReports: Math.floor(Math.random() * 2000) + 4000
-          },
-          lastUpdated: new Date().toISOString()
-        }
-      }
-      
-      // If API key is available, use Gemini to generate data
-      const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
-      
-      const prompt = `Generate realistic statistics for a women's transit safety app in Delhi get real time data or latest data you have and send, India. The app tracks safety data in public transportation.
-
-Return only a valid JSON object with this structure:
-{
-  "stats": {
-    "reportedIncidents": (a number between 2000-3500),
-    "responseTime": (emergency response time in minutes, between 15-40),
-    "cctvCoverage": (percentage of transit routes with CCTV, between 30-60),
-    "communityReports": (number of citizen reports, between 4000-7000)
-  },
-  "lastUpdated": (current date ISO format)
-}
-
-Make the data realistic by considering recent trends in public safety in Delhi.`
-
-      const result = await model.generateContent(prompt)
-      const responseText = result.response.text()
-      
-      // Find the JSON part of the response
-      const jsonMatch = responseText.match(/(\{[\s\S]*\})/)
-      if (jsonMatch) {
-        try {
-          const parsedData = JSON.parse(jsonMatch[0])
-          return parsedData as PageData
-        } catch (parseError) {
-          console.error("Failed to parse Gemini response:", parseError)
-          throw new Error("Invalid data format from AI")
-        }
-      } else {
-        throw new Error("Could not extract valid JSON from AI response")
-      }
-    } catch (err) {
-      console.error("Error generating mock data:", err)
-      throw new Error("Failed to generate mock page data")
-    }
-  }
+    // Simulate data loading
+    setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+  }, []);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -131,12 +59,6 @@ Make the data realistic by considering recent trends in public safety in Delhi.`
                 Systems View
               </Link>
               <Link
-                href="#trends"
-                className="font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Data Trends
-              </Link>
-              <Link
                 href="#action"
                 className="font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
@@ -145,18 +67,17 @@ Make the data realistic by considering recent trends in public safety in Delhi.`
             </nav>
             <div className="flex items-center gap-4">
               <ModeToggle />
-              <Button size="sm" className="hidden md:flex">
-                Report Incident
-              </Button>
             </div>
           </div>
         </header>
 
         <main className="container py-6 md:py-12">
-          {/* Hero Section */}
-          <section className="py-12 md:py-16 lg:py-22">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="space-y-4">
+          {/* Hero Section - Better Layout with Woman Beside Heading */}
+          <section className="py-12 md:py-16 lg:py-20">
+            {/* Heading and Woman Side by Side on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center mb-12">
+              {/* Heading Section - Now on Left */}
+              <div className="space-y-4 md:col-span-7">
                 <div className="inline-block rounded-lg bg-rose-100 px-3 py-1 text-sm text-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
                   Real-time Safety Data
                 </div>
@@ -168,34 +89,79 @@ Make the data realistic by considering recent trends in public safety in Delhi.`
                   safety in India's public transportation.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button size="lg">Explore the Data</Button>
-                  <Button variant="outline" size="lg">
-                    Learn More
-                  </Button>
+                  <Link href="#systems">
+                    <Button variant="outline" size="lg">
+                      Learn More
+                    </Button>
+                  </Link>
                 </div>
               </div>
-              <div className="rounded-xl border bg-card p-4 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Real-time Safety Index</h2>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <span className="relative flex h-3 w-3 mr-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                    </span>
-                    Live Data
-                  </div>
+              
+              {/* Woman Image - Now on Right */}
+              <div className="flex justify-center md:justify-end md:col-span-5">
+                <div className="w-full max-w-md md:max-w-full">
+                  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" className="w-full">
+                    {/* Background thought bubble */}
+                    <path d="M320,40 C350,40 370,60 370,90 C370,110 355,125 335,130 C335,135 340,145 350,150 C335,150 325,140 320,130 C290,130 270,110 270,90 C270,60 290,40 320,40" 
+                          fill="#f3f4f6" stroke="#d1d5db" strokeWidth="1.5" />
+                    
+                    {/* Question mark */}
+                    <text x="320" y="105" fontSize="50" textAnchor="middle" fill="#9ca3af">?</text>
+                    
+                    {/* Woman figure */}
+                    <ellipse cx="150" cy="270" rx="70" ry="10" fill="#f3f4f6" opacity="0.5" />
+                    
+                    {/* Body */}
+                    <path d="M150,250 L150,120 C150,100 130,90 130,70 C130,40 140,20 150,20 C160,20 170,40 170,70 C170,90 150,100 150,120" 
+                          fill="#f43f5e" opacity="0.8" />
+                    
+                    {/* Head */}
+                    <circle cx="150" cy="50" r="30" fill="#f8fafc" />
+                    
+                    {/* Face details */}
+                    <ellipse cx="140" cy="45" rx="3" ry="4" fill="#0f172a" />
+                    <ellipse cx="160" cy="45" rx="3" ry="4" fill="#0f172a" />
+                    <path d="M140,65 Q150,75 160,65" fill="none" stroke="#0f172a" strokeWidth="1.5" />
+                    
+                    {/* Hair */}
+                    <path d="M120,50 C110,30 120,10 150,10 C180,10 190,30 180,50 C180,30 120,30 120,50" fill="#0f172a" />
+                    
+                    {/* Arms */}
+                    <path d="M150,130 C180,140 200,120 210,140" fill="none" stroke="#f43f5e" strokeWidth="10" strokeLinecap="round" />
+                    <path d="M150,130 C120,140 100,120 90,140" fill="none" stroke="#f43f5e" strokeWidth="10" strokeLinecap="round" />
+                    
+                    {/* Multiple thought paths connecting to main thought bubble */}
+                    <path d="M180,70 Q230,40 270,90" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="5,5" />
+                    <circle cx="190" cy="65" r="3" fill="#d1d5db" />
+                    <circle cx="210" cy="55" r="4" fill="#d1d5db" />
+                    <circle cx="235" cy="50" r="3" fill="#d1d5db" />
+                  </svg>
                 </div>
-                <SafetyDataComponent />
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p>Safety index based on CrimeoMeter API data, Open Transit Data, and NCRB statistics.</p>
+              </div>
+            </div>
+              
+            {/* Safety Index Component - Below both heading and woman */}
+            <div className="rounded-xl border bg-card p-4 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Real-time Safety Index</h2>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <span className="relative flex h-3 w-3 mr-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                  </span>
+                  Live Data
                 </div>
+              </div>
+              <SafetyDataComponent />
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p>Safety index based on CrimeoMeter API data, Open Transit Data, and NCRB statistics.</p>
               </div>
             </div>
           </section>
 
           {/* Key Stats Section */}
           <section className="py-8 md:py-12">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border bg-card p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-rose-500" />
@@ -282,7 +248,7 @@ Make the data realistic by considering recent trends in public safety in Delhi.`
 
         <footer className="border-t bg-muted/40">
           <div className="container py-8 md:py-12">
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <h3 className="mb-4 text-lg font-semibold">SafeTransit India</h3>
                 <p className="text-sm text-muted-foreground">
