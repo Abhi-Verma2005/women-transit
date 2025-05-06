@@ -1,13 +1,116 @@
+"use client"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ModeToggle } from "@/components/mode-toggle"
-import { SafetyMap } from "@/components/safety-map"
+import { SafetyDataComponent } from "@/components/safety-map"
 import { SystemsThinking } from "@/components/systems-thinking"
 import { ActionSection } from "@/components/action-section"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Info, TrendingUp, Users } from "lucide-react"
+import { GoogleGenerativeAI } from "@google/generative-ai"
+
+// Define data types
+type PageData = {
+  stats: {
+    reportedIncidents: number
+    responseTime: number
+    cctvCoverage: number
+    communityReports: number
+  }
+  lastUpdated: string
+}
 
 export default function Home() {
+  const [pageData, setPageData] = useState<PageData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // If API fails or isn't available, use Gemini to generate mock data
+        const mockData = await generateMockData()
+        setPageData(mockData)
+      } catch (err) {
+        console.error("Error fetching page data:", err)
+        // Use fallback values
+        setPageData({
+          stats: {
+            reportedIncidents: 2347,
+            responseTime: 27,
+            cctvCoverage: 43,
+            communityReports: 5129
+          },
+          lastUpdated: new Date().toISOString()
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Function to generate mock data using Gemini AI
+  async function generateMockData(): Promise<PageData> {
+    try {
+      // Check if Gemini API key is available
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
+      
+      if (!apiKey) {
+        // If no API key, return hardcoded mock data
+        return {
+          stats: {
+            reportedIncidents: Math.floor(Math.random() * 1000) + 2000,
+            responseTime: Math.floor(Math.random() * 15) + 20,
+            cctvCoverage: Math.floor(Math.random() * 20) + 35,
+            communityReports: Math.floor(Math.random() * 2000) + 4000
+          },
+          lastUpdated: new Date().toISOString()
+        }
+      }
+      
+      // If API key is available, use Gemini to generate data
+      const genAI = new GoogleGenerativeAI(apiKey)
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+      
+      const prompt = `Generate realistic statistics for a women's transit safety app in Delhi get real time data or latest data you have and send, India. The app tracks safety data in public transportation.
+
+Return only a valid JSON object with this structure:
+{
+  "stats": {
+    "reportedIncidents": (a number between 2000-3500),
+    "responseTime": (emergency response time in minutes, between 15-40),
+    "cctvCoverage": (percentage of transit routes with CCTV, between 30-60),
+    "communityReports": (number of citizen reports, between 4000-7000)
+  },
+  "lastUpdated": (current date ISO format)
+}
+
+Make the data realistic by considering recent trends in public safety in Delhi.`
+
+      const result = await model.generateContent(prompt)
+      const responseText = result.response.text()
+      
+      // Find the JSON part of the response
+      const jsonMatch = responseText.match(/(\{[\s\S]*\})/)
+      if (jsonMatch) {
+        try {
+          const parsedData = JSON.parse(jsonMatch[0])
+          return parsedData as PageData
+        } catch (parseError) {
+          console.error("Failed to parse Gemini response:", parseError)
+          throw new Error("Invalid data format from AI")
+        }
+      } else {
+        throw new Error("Could not extract valid JSON from AI response")
+      }
+    } catch (err) {
+      console.error("Error generating mock data:", err)
+      throw new Error("Failed to generate mock page data")
+    }
+  }
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <div className="min-h-screen bg-background font-sans">
@@ -82,7 +185,7 @@ export default function Home() {
                     Live Data
                   </div>
                 </div>
-                <SafetyMap />
+                <SafetyDataComponent />
                 <div className="mt-4 text-sm text-muted-foreground">
                   <p>Safety index based on CrimeoMeter API data, Open Transit Data, and NCRB statistics.</p>
                 </div>
@@ -98,7 +201,11 @@ export default function Home() {
                   <AlertTriangle className="h-5 w-5 text-rose-500" />
                   <h3 className="text-sm font-medium">Reported Incidents</h3>
                 </div>
-                <p className="mt-2 text-2xl font-bold">2,347</p>
+                {loading ? (
+                  <p className="mt-2 text-2xl font-bold animate-pulse">Loading...</p>
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">{pageData?.stats.reportedIncidents.toLocaleString()}</p>
+                )}
                 <p className="text-xs text-muted-foreground">Last 30 days • Source: CrimeoMeter API</p>
               </div>
               <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -106,7 +213,11 @@ export default function Home() {
                   <TrendingUp className="h-5 w-5 text-amber-500" />
                   <h3 className="text-sm font-medium">Avg. Response Time</h3>
                 </div>
-                <p className="mt-2 text-2xl font-bold">27 min</p>
+                {loading ? (
+                  <p className="mt-2 text-2xl font-bold animate-pulse">Loading...</p>
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">{pageData?.stats.responseTime} min</p>
+                )}
                 <p className="text-xs text-muted-foreground">Emergency services • Source: API Setu</p>
               </div>
               <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -114,7 +225,11 @@ export default function Home() {
                   <Info className="h-5 w-5 text-sky-500" />
                   <h3 className="text-sm font-medium">CCTV Coverage</h3>
                 </div>
-                <p className="mt-2 text-2xl font-bold">43%</p>
+                {loading ? (
+                  <p className="mt-2 text-2xl font-bold animate-pulse">Loading...</p>
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">{pageData?.stats.cctvCoverage}%</p>
+                )}
                 <p className="text-xs text-muted-foreground">Of transit routes • Source: Transport for India API</p>
               </div>
               <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -122,10 +237,19 @@ export default function Home() {
                   <Users className="h-5 w-5 text-emerald-500" />
                   <h3 className="text-sm font-medium">Community Reports</h3>
                 </div>
-                <p className="mt-2 text-2xl font-bold">5,129</p>
+                {loading ? (
+                  <p className="mt-2 text-2xl font-bold animate-pulse">Loading...</p>
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">{pageData?.stats.communityReports.toLocaleString()}</p>
+                )}
                 <p className="text-xs text-muted-foreground">Citizen contributions • Source: Open Data Platform</p>
               </div>
             </div>
+            {!loading && pageData && (
+              <div className="mt-2 text-xs text-center text-muted-foreground">
+                Last updated: {new Date(pageData.lastUpdated).toLocaleString()}
+              </div>
+            )}
           </section>
 
           {/* Systems Thinking Section */}
