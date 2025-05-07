@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertTriangle, Shield, Info } from "lucide-react"
+import { AlertTriangle, Shield, Info, MapPin, Clock } from "lucide-react"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 type SafetyData = {
@@ -153,49 +153,55 @@ Include 4-6 different areas with varied safety scores. Make the data realistic, 
   const renderSafetyScore = (score: number) => {
     let colorClass = ""
     let labelText = ""
+    let bgClass = ""
 
     if (score >= 0.8) {
-      colorClass = "text-green-500"
+      colorClass = "text-green-700"
+      bgClass = "bg-green-50"
       labelText = "Very Safe"
     }
     else if (score >= 0.6) {
-      colorClass = "text-emerald-500"
+      colorClass = "text-emerald-700"
+      bgClass = "bg-emerald-50"
       labelText = "Generally Safe"
     }
     else if (score >= 0.4) {
-      colorClass = "text-amber-500"
+      colorClass = "text-amber-700"
+      bgClass = "bg-amber-50"
       labelText = "Exercise Caution"
     }
     else if (score >= 0.2) {
-      colorClass = "text-orange-500"
+      colorClass = "text-orange-700"
+      bgClass = "bg-orange-50"
       labelText = "High Risk"
     }
     else {
-      colorClass = "text-rose-500"
+      colorClass = "text-rose-700"
+      bgClass = "bg-rose-50"
       labelText = "Very High Risk"
     }
 
     return (
-      <div className="flex flex-col items-end">
-        <div className="flex items-center gap-1">
-          <Shield className={`h-4 w-4 ${colorClass}`} />
-          <div className={`font-bold ${colorClass}`}>{Math.round(score * 100)}</div>
-          <div className="text-xs text-muted-foreground">/ 100</div>
+      <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${bgClass}`}>
+        <Shield className={`h-4 w-4 ${colorClass}`} />
+        <div className={`text-sm font-medium ${colorClass}`}>
+          {Math.round(score * 100)}
+          <span className="mx-1 text-xs font-normal text-muted-foreground"> | </span>
+          <span className="text-xs">{labelText}</span>
         </div>
-        <div className={`text-xs ${colorClass}`}>{labelText}</div>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
+      <div className="space-y-6">
+        <Skeleton className="h-40 w-full rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
         </div>
       </div>
     )
@@ -204,9 +210,9 @@ Include 4-6 different areas with varied safety scores. Make the data realistic, 
   if (error) {
     return (
       <Card className="border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/30">
-        <CardContent className="flex items-center gap-2 p-4 text-rose-600 dark:text-rose-400">
-          <AlertTriangle className="h-4 w-4" />
-          <p className="text-sm">{error}</p>
+        <CardContent className="flex items-center gap-3 p-6 text-rose-600 dark:text-rose-400">
+          <AlertTriangle className="h-5 w-5" />
+          <p>{error}</p>
         </CardContent>
       </Card>
     )
@@ -217,48 +223,54 @@ Include 4-6 different areas with varied safety scores. Make the data realistic, 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Overview card */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-medium">Safety Overview</h3>
-              <p className="text-sm text-muted-foreground">{location.name} Public Transit</p>
+      <Card className="overflow-hidden shadow-sm border-slate-200">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              <CardTitle className="text-xl">Transit Safety Index</CardTitle>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">Overall Safety</div>
-              {renderSafetyScore(safetyData.safetyIndex.overall)}
-            </div>
+            {renderSafetyScore(safetyData.safetyIndex.overall)}
           </div>
-          
+          <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+            <span>{location.name} Public Transportation</span>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pb-6">
           {/* Insights section */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-3 flex gap-2">
+          <Card className="bg-primary/5 border-none mt-4">
+            <CardContent className="p-4 flex gap-3">
               <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <p className="text-sm">{safetyData.insights}</p>
+              <p className="text-sm leading-relaxed">{safetyData.insights}</p>
             </CardContent>
           </Card>
         </CardContent>
       </Card>
 
       {/* Area safety scores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {safetyData.safetyIndex.byArea.map((area) => (
-          <Card key={area.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-medium">{area.name}</h4>
-                {renderSafetyScore(area.score)}
-              </div>
-              <p className="text-sm text-muted-foreground">{area.insights}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div>
+        <h3 className="text-lg font-medium mb-3 pl-1">Area Safety Analysis</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {safetyData.safetyIndex.byArea.map((area) => (
+            <Card key={area.id} className="hover:shadow-md transition-shadow border-slate-200">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <h4 className="font-medium text-base">{area.name}</h4>
+                  {renderSafetyScore(area.score)}
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{area.insights}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
       
       {/* Last updated timestamp */}
-      <div className="text-xs text-center text-muted-foreground">
+      <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+        <Clock className="h-4 w-4" />
         Last updated: {new Date(safetyData.timestamp).toLocaleString()}
       </div>
     </div>
