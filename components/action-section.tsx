@@ -207,9 +207,6 @@ export function ActionSection() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button asChild className="w-full">
-                  <Link href={point.actionUrl}>{point.action}</Link>
-                </Button>
               </CardFooter>
             </Card>
           ))}
